@@ -65,7 +65,14 @@ class TextManipulationGUI:
         self.removed_lines = []  # Store removed lines for undo functionality
         self.preview_window = None  
         self.create_input_stage()
-
+    def undo_action(self):
+        if self.removed_lines:
+            last_action = self.removed_lines.pop()
+            if last_action["type"] == "remove":
+                self.lines_data.insert(last_action["index"], last_action["data"])
+            elif last_action["type"] == "separator":
+                self.lines_data[last_action["index"]]["separator"] = last_action["data"]
+            self.refresh_view()
     def sentence_case(self, text):
         """Convert text to sentence case, including after colons"""
         if not text:
@@ -114,7 +121,16 @@ class TextManipulationGUI:
             relief=tk.FLAT,
             borderwidth=1
         )
- 
+
+    def remove_chapters(self):
+        """Remove lines that contain only the word 'chapter' followed by non-letter characters"""
+        text = self.text_input.get("1.0", tk.END).strip()
+        lines = text.split('\n')
+        filtered_lines = [line for line in lines if not re.match(r'^\s*chapter\s*[^a-zA-Z]*$', line, re.IGNORECASE)]
+        filtered_text = '\n'.join(filtered_lines)
+        self.text_input.delete("1.0", tk.END)
+        self.text_input.insert(tk.END, filtered_text)
+            
     def create_preview_window(self):
         """Create a separate window for preview"""
         if self.preview_window is None or not self.preview_window.winfo_exists():
@@ -164,6 +180,12 @@ class TextManipulationGUI:
                                 style='TButton',
                                 command=self.clean_text)
         clean_button.pack(side=tk.LEFT, padx=5)
+
+        remove_chapters_button = ttk.Button(button_frame,
+                                            text="Remove Chapters",
+                                            style='TButton',
+                                            command=self.remove_chapters)
+        remove_chapters_button.pack(side=tk.LEFT, padx=5)
 
         next_button = ttk.Button(button_frame,
                                text="Separate Lines",
@@ -245,6 +267,13 @@ class TextManipulationGUI:
                             style='TButton', command=undo_remove)
         undo_btn.pack(side=tk.RIGHT, padx=5)
 
+        # Helper function to convert text to title case
+        def to_title_case(text):
+            exceptions = ["and", "or", "but", "nor", "so", "for", "yet", "a", "an", "the", "in", "on", "at", "to", "by", "with", "of"]
+            words = text.split()
+            title_cased = [word.capitalize() if word.lower() not in exceptions else word.lower() for word in words]
+            return ' '.join(title_cased)
+
         # Create widgets for each line
         for i, line_data in enumerate(self.lines_data):
             line_frame = ttk.Frame(self.lines_frame, style='Content.TFrame')
@@ -254,10 +283,12 @@ class TextManipulationGUI:
             btn_frame = ttk.Frame(line_frame, style='Content.TFrame')
             btn_frame.pack(side=tk.LEFT, padx=(0, 5))
             
-            def make_separator_handler(idx, sep, color):
+            def make_separator_handler(idx, sep, color, title_case=False):
                 def handler():
                     self.lines_data[idx]["separator"] = sep
                     self.lines_data[idx]["separator_color"] = color
+                    if title_case:
+                        self.lines_data[idx]["text"] = to_title_case(self.lines_data[idx]["text"])
                     self.update_preview()
                 return handler
             
@@ -273,12 +304,12 @@ class TextManipulationGUI:
             if i > 0:
                 slash_btn = ttk.Button(btn_frame, text="/",
                                     style='Slash.TButton',
-                                    command=make_separator_handler(i, " / ", '#e0f0ff'))
+                                    command=make_separator_handler(i, " / ", '#91c3f1', title_case=True))
                 slash_btn.pack(side=tk.LEFT, padx=2)
                 
                 dash_btn = ttk.Button(btn_frame, text="--",
                                     style='Dash.TButton',
-                                    command=make_separator_handler(i, " -- ", '#e0ffe0'))
+                                    command=make_separator_handler(i, " -- ", '#9be89b'))
                 dash_btn.pack(side=tk.LEFT, padx=2)
             
             clear_btn = ttk.Button(btn_frame, text="×",
@@ -436,14 +467,16 @@ class TextManipulationGUI:
         return bool(re.match(pattern, text.upper()))
 
     def clean_text(self):
-        text = self.text_input.get("1.0", tk.END)
+        """Clean the input text by removing unwanted characters and lines"""
+        text = self.text_input.get("1.0", tk.END).strip()
         lines = text.split('\n')
         cleaned_lines = []
+
         for line in lines:
             words = line.split()
             cleaned_words = []
             skip_next = False
-            
+
             for i, word in enumerate(words):
                 if skip_next:
                     skip_next = False
@@ -451,21 +484,23 @@ class TextManipulationGUI:
                 # Check for standalone roman numerals
                 if self.is_roman_numeral(word):
                     continue
-                    
+
                 # Check for numbers after chapter-related words
                 if word.isdigit() and i > 0:
                     prev_word = words[i-1].lower()
                     if not any(keyword in prev_word for keyword in ['chap', 'part', 'section', 'unit']):
                         continue
-                
+
                 cleaned_words.append(word)
-            
+
             # Join words and apply sentence casing
             if cleaned_words:
                 cleaned_line = ' '.join(cleaned_words)
                 cleaned_line = self.sentence_case(cleaned_line)
-                cleaned_lines.append(cleaned_line)
-            
+                # Check if the cleaned line contains only non-letter characters
+                if re.search('[a-zA-Z]', cleaned_line):
+                    cleaned_lines.append(cleaned_line)
+
         cleaned_text = '\n'.join(cleaned_lines)
         self.text_input.delete("1.0", tk.END)
         self.text_input.insert(tk.END, cleaned_text)
