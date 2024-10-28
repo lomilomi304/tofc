@@ -1,0 +1,635 @@
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Table of Contents Formatter</title>
+        <style>
+            /* OpenTTD-inspired color palette */
+            :root {
+                --openttd-gray: #808088;
+                --openttd-dark: #404048;
+                --openttd-light: #C0C0C8;
+                --openttd-highlight: #00A8E8;
+                --openttd-warning: #DB3E00;
+                --openttd-button: #949494;
+                --openttd-text: #E8E8E8;
+                --separator-dash: #ffa500;  /* Orange for -- */
+                --separator-slash: #ff00ff; /* Magenta for / */
+            }
+        
+            body {
+                font-family: 'Segoe UI', sans-serif;
+                margin: 0;
+                padding: 10px;
+                background-color: var(--openttd-dark);
+                color: var(--openttd-text);
+            }
+        
+            /* OpenTTD-style window */
+            .stage {
+                display: none;
+                background: var(--openttd-gray);
+                border: 3px solid var(--openttd-light);
+                border-radius: 0;
+                box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+                margin: 10px;
+            }
+        
+            .active {
+                display: block;
+            }
+        
+            /* OpenTTD-style header */
+            .header {
+                background: linear-gradient(to right, var(--openttd-dark), var(--openttd-gray));
+                color: var(--openttd-text);
+                padding: 8px;
+                border-bottom: 2px solid var(--openttd-light);
+                display: flex;
+                align-items: center;
+            }
+        
+            .header h2 {
+                margin: 0;
+                font-size: 16px;
+                font-weight: bold;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                text-shadow: 1px 1px 0 black;
+            }
+        
+            .content {
+                padding: 10px;
+                background: var(--openttd-gray);
+            }
+        
+            /* Updated toolbar styles */
+            .toolbar {
+                display: flex;
+                align-items: center;
+                background: var(--openttd-dark);
+                padding: 8px;
+                border: 2px solid var(--openttd-light);
+                margin-bottom: 10px;
+            }
+        
+            .toolbar-divider {
+                width: 2px;
+                height: 24px;
+                background: var(--openttd-light);
+                margin: 0 8px;
+            }
+        
+            .tool-button {
+                width: 32px;
+                height: 32px;
+                padding: 4px;
+                border: 2px outset var(--openttd-light);
+                background: var(--openttd-button);
+                margin-right: 4px;
+                position: relative;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        
+            .tool-button:hover {
+                background: var(--openttd-highlight);
+            }
+        
+            .tool-button:active {
+                border-style: inset;
+                transform: translateY(1px);
+            }
+        
+            .tool-button.clean-all {
+                background: var(--openttd-warning);
+            }
+        
+            .tool-button.title-case {
+                background: #FFD700;
+            }
+        
+            .tool-button i {
+                font-size: 18px;
+                color: var(--openttd-text);
+            }
+        
+            .tool-tooltip {
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--openttd-dark);
+                border: 2px solid var(--openttd-light);
+                padding: 4px 8px;
+                white-space: nowrap;
+                font-size: 12px;
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.2s;
+                z-index: 100;
+                color: var(--openttd-text);
+                margin-bottom: 5px;
+            }
+        
+            .tool-button:hover .tool-tooltip {
+                opacity: 1;
+                visibility: visible;
+            }
+        
+            /* Update the lines container styles */
+            #linesContainer {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+                margin-bottom: 20px;
+            }
+        
+            /* Ensure line items work with grid */
+            .line-item {
+                display: flex;
+                align-items: center;
+                background: var(--openttd-dark);
+                border: 2px inset var(--openttd-light);
+                margin: 0 0 10px 0;
+                padding: 8px;
+            }
+            
+            .line-item .remove-btn {
+                background: var(--openttd-warning);
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                font-weight: bold;
+                color: var(--openttd-text);
+                cursor: pointer;
+            }
+
+            .line-item .remove-btn:hover {
+                background: #c00;
+            }
+        
+            /* OpenTTD-style textareas */
+            textarea {
+                width: calc(100% - 20px);
+                min-height: 300px;
+                background: var(--openttd-dark);
+                color: var(--openttd-text);
+                border: 2px inset var(--openttd-light);
+                padding: 10px;
+                font-family: monospace;
+                font-size: 14px;
+                resize: vertical;
+            }
+        
+            /* OpenTTD-style buttons */
+            button {
+                background: var(--openttd-button);
+                border: 2px outset var(--openttd-light);
+                color: var(--openttd-text);
+                padding: 6px 12px;
+                cursor: pointer;
+                font-size: 12px;
+                text-transform: uppercase;
+                text-shadow: 1px 1px 0 black;
+            }
+        
+            button:hover {
+                background: var(--openttd-highlight);
+            }
+        
+            button:active {
+                border-style: inset;
+                transform: translateY(1px);
+            }
+        
+            /* OpenTTD-style separator buttons */
+            .separator-btn {
+                margin-right: 4px;
+                padding: 4px 8px;
+                font-size: 11px;
+                min-width: 30px;
+            }
+        
+            /* Preview section styling */
+            .preview-section {
+                position: sticky;
+                top: 0;
+                background-color: var(--openttd-gray);
+                border: 4px solid var(--openttd-light);
+                padding: 10px;
+                z-index: 1;
+            }
+        
+            .preview-title {
+                font-size: 14px;
+                font-weight: bold;
+                color: var(--openttd-text);
+                margin-bottom: 10px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                text-shadow: 1px 1px 0 black;
+            }
+        
+            #previewContent {
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--openttd-dark);
+            border: 2px inset var(--openttd-light);
+            padding: 10px;
+            color: var(--openttd-text);
+            font-family: monospace;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+        
+            /* Separator highlighting */
+            .separator-dash {
+                background-color: var(--separator-dash);
+                padding: 2px 4px;
+                border-radius: 2px;
+                color: black;
+                display: inline-block;
+            }
+        
+            .separator-slash {
+                background-color: var(--separator-slash);
+                padding: 2px 4px;
+                border-radius: 2px;
+                color: black;
+                display: inline-block;
+            }
+        
+            .button-container {
+                margin-top: 10px;
+                display: flex;
+                justify-content: space-between;
+                gap: 5px;
+            }
+        
+            /* OpenTTD-style scrollbars */
+            ::-webkit-scrollbar {
+                width: 14px;
+                height: 14px;
+            }
+        
+            ::-webkit-scrollbar-track {
+                background: var(--openttd-dark);
+                border: 2px solid var(--openttd-light);
+            }
+        
+            ::-webkit-scrollbar-thumb {
+                background: var(--openttd-button);
+                border: 2px outset var(--openttd-light);
+            }
+        
+            ::-webkit-scrollbar-thumb:hover {
+                background: var(--openttd-highlight);
+            }
+        
+            /* Responsive grid adjustment */
+            @media (min-width: 1200px) {
+                #linesContainer {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+        
+            @media (max-width: 768px) {
+                #linesContainer {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+        
+        /* Complete HTML Section */
+        <div id="stage1" class="stage active">
+            <div class="header">
+                <h2>📝 Input Text</h2>
+            </div>
+            <div class="content">
+                <div class="toolbar">
+                    <div class="tool-button clean-all" onclick="performAllClean()">
+                        <i>🧹</i>
+                        <div class="tool-tooltip">Clean All</div>
+                    </div>
+                    <div class="tool-button" onclick="trimSpaces()">
+                        <i>✂️</i>
+                        <div class="tool-tooltip">Trim Spaces</div>
+                    </div>
+                    <div class="tool-button" onclick="trimDigits()">
+                        <i>🔢</i>
+                        <div class="tool-tooltip">Trim Digits</div>
+                    </div>
+                    <div class="tool-button" onclick="toSentenceCase()">
+                        <i>📚</i>
+                        <div class="tool-tooltip">Sentence Case</div>
+                    </div>
+                    <div class="tool-button" onclick="removeBlankLines()">
+                        <i>🗑️</i>
+                        <div class="tool-tooltip">Remove Blank Lines</div>
+                    </div>
+                    <div class="tool-button" onclick="removeRomanNumerals()">
+                        <i>XI</i>
+                        <div class="tool-tooltip">Remove Roman Numerals</div>
+                    </div>
+                    <div class="toolbar-divider"></div>
+                    <div class="tool-button title-case" onclick="convertSelectedToTitleCase()">
+                        <i>📝</i>
+                        <div class="tool-tooltip">Convert Selection to Title Case</div>
+                    </div>
+                </div>
+        
+                <textarea id="inputText" placeholder="Enter your text here..."></textarea>
+                <div class="button-container">
+                    <button onclick="nextStage()">▶️ Separate Lines</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="stage2" class="stage">
+            <div class="header">
+                <h2>🔗 Line Separation</h2>
+            </div>
+            <div class="content">
+                <div class="preview-section">
+                    <div class="preview-title">Live Preview</div>
+                    <div id="previewContent"></div>
+                </div>
+                <div id="linesContainer"></div>
+                <div class="button-container">
+                    <button onclick="previousStage()">◀️ Back</button>
+                    <button onclick="nextStage()">▶️ Finalize</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="stage3" class="stage">
+            <div class="header">
+                <h2>✨ Final Text</h2>
+            </div>
+            <div class="content">
+                <textarea id="outputText" readonly></textarea>
+                <div class="button-container">
+                    <button onclick="previousStage()">◀️ Back</button>
+                    <button onclick="resetApp()">🔄 Start Over</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let currentStage = 1;
+            let linesData = [];
+            let removedLines = [];
+            
+            function getLines() {
+                return document.getElementById('inputText').value.split('\n');
+            }
+            
+            function setLines(lines) {
+                document.getElementById('inputText').value = lines.join('\n');
+            }
+            
+            function trimSpaces() {
+                const lines = getLines().map(line => line.trim());
+                setLines(lines);
+            }
+            
+            function trimDigits() {
+                const lines = getLines().map(line => {
+                    line = line.trim();
+                    return line.replace(/^\d+/, '').replace(/\d+$/, '').trim();
+                });
+                setLines(lines);
+            }
+            
+            function toSentenceCase() {
+                const lines = getLines().map(line => {
+                    const delimiter = line.includes(':') ? ': ' : '. ';
+                    const parts = line.split(delimiter);
+                    
+                    const processedParts = parts.map(part => {
+                        part = part.trim().toLowerCase();
+                        if (part.length === 0) return '';
+                        return part.charAt(0).toUpperCase() + part.slice(1);
+                    });
+            
+                    return processedParts.join(delimiter);
+                });
+                setLines(lines);
+            }
+            
+            function removeBlankLines() {
+                const lines = getLines().filter(line => line.trim().length > 0);
+                setLines(lines);
+            }
+            
+            function removeRomanNumerals() {
+                const lines = getLines().map(line => line.replace(/\b[IVX]+\b/gi, '').trim()).filter(line => line.length > 0);
+                setLines(lines);
+            }
+            
+            function convertSelectedToTitleCase() {
+                const textarea = document.getElementById('inputText');
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const selection = textarea.value.substring(start, end);
+            
+                if (selection) {
+                    const prepositionsArticles = new Set([
+                        'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'with',
+                        'by', 'as', 'but', 'or', 'and', 'nor', 'from', 'into'
+                    ]);
+            
+                    const titleCased = selection.split(' ').map((word, index) => {
+                        word = word.toLowerCase();
+                        // Always capitalize first and last words, regardless of type
+                        if (index === 0 || index === selection.split(' ').length - 1) {
+                            return word.charAt(0).toUpperCase() + word.slice(1);
+                        }
+                        // Check if word is a preposition or article
+                        return prepositionsArticles.has(word) ? 
+                            word : 
+                            word.charAt(0).toUpperCase() + word.slice(1);
+                    }).join(' ');
+            
+                    const newText = textarea.value.substring(0, start) + 
+                                titleCased + 
+                                textarea.value.substring(end);
+                    
+                    textarea.value = newText;
+                }
+            }
+            
+            function performAllClean() {
+                trimSpaces();
+                trimDigits();
+                toSentenceCase();
+                removeBlankLines();
+                removeRomanNumerals();
+            }
+            
+            function nextStage() {
+                if (currentStage === 1) {
+                    const text = document.getElementById('inputText').value;
+                    linesData = text.split('\n')
+                        .filter(line => line.trim())
+                        .map(line => ({
+                            text: line.trim(),
+                            separator: ''
+                        }));
+
+                    // Add -- separators automatically
+                    linesData.forEach((line, index) => {
+                        if (index > 0) {
+                            line.separator = ' -- ';
+                        }
+                    });
+
+                    displayLines();
+                } else if (currentStage === 2) {
+                    const finalText = compileFinalText();
+                    document.getElementById('outputText').value = finalText;
+                }
+
+                document.getElementById(`stage${currentStage}`).classList.remove('active');
+                currentStage++;
+                document.getElementById(`stage${currentStage}`).classList.add('active');
+            }
+
+            
+            function previousStage() {
+                document.getElementById(`stage${currentStage}`).classList.remove('active');
+                currentStage--;
+                document.getElementById(`stage${currentStage}`).classList.add('active');
+            }
+            
+            function displayLines() {
+                const container = document.getElementById('linesContainer');
+                container.innerHTML = '';
+
+                // Calculate number of columns based on screen width
+                const columnCount = window.innerWidth >= 1200 ? 3 : (window.innerWidth > 768 ? 2 : 1);
+
+                // Calculate rows needed
+                const totalRows = Math.ceil(linesData.length / columnCount);
+
+                // Create and arrange line items in the correct order
+                for (let row = 0; row < totalRows; row++) {
+                    for (let col = 0; col < columnCount; col++) {
+                        const index = row + col * totalRows;
+                        if (index < linesData.length) {
+                            const lineDiv = createLineItem(index);
+                            lineDiv.style.order = index;
+                            container.appendChild(lineDiv);
+                        }
+                    }
+                }
+
+                updatePreview();
+            }
+
+            function createLineItem(index) {
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'line-item';
+
+                if (index > 0) {
+                    const slashBtn = createSeparatorButton('/', ' / ', index);
+                    const dashBtn = createSeparatorButton('--', ' -- ', index);
+                    lineDiv.appendChild(slashBtn);
+                    lineDiv.appendChild(dashBtn);
+                }
+
+                const textSpanWrapper = document.createElement('div');
+                textSpanWrapper.style.flexGrow = 1;
+                textSpanWrapper.style.marginRight = '10px';
+
+                const textSpan = document.createElement('span');
+                textSpan.textContent = linesData[index].text;
+                textSpanWrapper.appendChild(textSpan);
+                lineDiv.appendChild(textSpanWrapper);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = '×';
+                removeBtn.className = 'remove-btn';
+                removeBtn.onclick = () => removeLine(index);
+                lineDiv.appendChild(removeBtn);
+
+                return lineDiv;
+            }
+
+
+            
+            function createSeparatorButton(text, separator, index) {
+                const btn = document.createElement('button');
+                btn.textContent = text;
+                btn.className = 'separator-btn';
+
+                // Apply color styles based on the separator type
+                if (text === '--') {
+                    btn.style.color = 'var(--separator-dash)';
+                } else if (text === '/') {
+                    btn.style.color = 'var(--separator-slash)';
+                }
+
+                btn.onclick = () => {
+                    linesData[index].separator = separator;
+                    updatePreview();
+                };
+                return btn;
+                }
+            
+            function updatePreview() {
+                const preview = document.getElementById('previewContent');
+                let text = compileFinalText();
+                
+                // Escape special characters to prevent HTML injection
+                text = text.replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+                
+                // Add highlighting for separators
+                text = text.replace(/ -- /g, '<span class="separator-dash"> -- </span>');
+                text = text.replace(/ \/ /g, '<span class="separator-slash"> / </span>');
+                
+                preview.innerHTML = text;
+            }
+            
+            function removeLine(index) {
+                removedLines.push(linesData[index]);
+                linesData.splice(index, 1);
+                displayLines();
+            }
+            
+            function compileFinalText() {
+                return linesData
+                    .map((line, index) => {
+                        if (index === 0) return line.text;
+                        return line.separator + line.text;
+                    })
+                    .join('')
+                    .trim() + '.';
+            }
+
+            function resetApp() {
+                currentStage = 1;
+                linesData = [];
+                removedLines = [];
+                document.getElementById('inputText').value = '';
+                document.getElementById('stage3').classList.remove('active');
+                document.getElementById('stage1').classList.add('active');
+            }
+            
+            // Add window resize handler to update the layout when screen size changes
+            window.addEventListener('resize', () => {
+                if (currentStage === 2) {
+                    displayLines();
+                }
+            });
+            </script>
+    </body>
+    </html>
