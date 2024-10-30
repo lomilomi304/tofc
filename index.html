@@ -247,7 +247,19 @@
             line-height: 1.4;
             white-space: pre-wrap;
         }
-        
+
+        #stage1 .content {
+        flex-grow: 1;
+        flex-direction: column;
+    }
+
+    #stage1 textarea {
+        flex-grow: 0;
+        height: 60vh; /* Set the height to 70% of the viewport height */
+        min-height: 0;
+        max-height: 60vh; /* Ensure the textarea doesn't exceed 70% of the viewport height */
+    }
+
             /* Separator highlighting */
             .separator-dash {
                 background-color: var(--separator-dash);
@@ -306,7 +318,7 @@
             }
         </style>
         
-        /* Complete HTML Section */
+<!-- Stage 1 - Clean Text -->
         <div id="stage1" class="stage active">
             <div class="header">
                 <h2>📝 Input Text</h2>
@@ -340,7 +352,7 @@
                     <div class="toolbar-divider"></div>
                     <div class="tool-button title-case" onclick="convertSelectedToTitleCase()">
                         <i>📝</i>
-                        <div class="tool-tooltip">Convert Selection to Title Case</div>
+                        <div class="tool-tooltip">Title Case shortcut alt-c</div>
                     </div>
                 </div>
         
@@ -350,10 +362,10 @@
                 </div>
             </div>
         </div>
-        
+        <!-- Stage 2 Separate Lines-->
         <div id="stage2" class="stage">
             <div class="header">
-                <h2>🔗 Line Separation</h2>
+                <h2>Line Separation</h2>
             </div>
             <div class="content">
                 <div class="preview-section">
@@ -362,21 +374,22 @@
                 </div>
                 <div id="linesContainer"></div>
                 <div class="button-container">
-                    <button onclick="previousStage()">◀️ Back</button>
-                    <button onclick="nextStage()">▶️ Finalize</button>
+                    <button onclick="previousStage()">Back</button>
+                    <button onclick="nextStage()">Finalize</button>
                 </div>
             </div>
         </div>
-        
+
+        <!-- Stage 3 Final Text -->
         <div id="stage3" class="stage">
             <div class="header">
-                <h2>✨ Final Text</h2>
+                <h2>Final Text</h2>
             </div>
             <div class="content">
-                <textarea id="outputText" readonly></textarea>
+                <textarea id="outputText"></textarea>
                 <div class="button-container">
-                    <button onclick="previousStage()">◀️ Back</button>
-                    <button onclick="resetApp()">🔄 Start Over</button>
+                    <button onclick="previousStage()">Back</button>
+                    <button onclick="resetApp()">Start Over</button>
                 </div>
             </div>
         </div>
@@ -424,7 +437,10 @@
             }
             
             function removeBlankLines() {
-                const lines = getLines().filter(line => line.trim().length > 0);
+                const lines = getLines().filter(line => {
+                    // Check if the line consists solely of non-letter characters
+                    return line.trim().length > 0 && /^[^a-zA-Z]+$/.test(line.trim()) === false;
+                });
                 setLines(lines);
             }
             
@@ -465,6 +481,13 @@
                 }
             }
             
+            document.addEventListener('keydown', (event) => {
+            // Implement keyboard shortcut for "Convert Selection to Title Case"
+            if (event.altKey && event.key.toLowerCase() === 'c') {
+                convertSelectedToTitleCase();
+            }
+        });
+
             function performAllClean() {
                 trimSpaces();
                 trimDigits();
