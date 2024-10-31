@@ -6,6 +6,7 @@
   "scripts": {
     "start": "electron .",
     "electron:package:win": "electron-builder build --win --x64"
+    "electron:package:mac": "electron-builder build --mac"
   },
   "build": {
     "appId": "com.yourcompany.tofcformatter",
