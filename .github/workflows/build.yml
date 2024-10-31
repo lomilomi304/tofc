@@ -8,7 +8,11 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
@@ -25,12 +29,27 @@ jobs:
         npm install electron@latest electron-builder@latest --save-dev
 
     - name: Build Windows executable
+      if: matrix.os == 'windows-latest'
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: npm run electron:package:win
 
-    - name: Upload artifact
+    - name: Build macOS executable
+      if: matrix.os == 'macos-latest'
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      run: npm run electron:package:mac
+
+    - name: Upload Windows artifact
+      if: matrix.os == 'windows-latest'
       uses: actions/upload-artifact@v4
       with:
         name: TofC_Formatter-Windows
         path: dist/*.exe
+
+    - name: Upload macOS artifact
+      if: matrix.os == 'macos-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: TofC_Formatter-macOS
+        path: dist/*.dmg
