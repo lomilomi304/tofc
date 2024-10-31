@@ -349,10 +349,19 @@
                         <i>XI</i>
                         <div class="tool-tooltip">Remove Roman Numerals</div>
                     </div>
+                    <div class="tool-button" onclick="removeSpecialCharGroups()">
+                        <i>🚫</i>
+                        <div class="tool-tooltip">Remove Special Char Groups</div>
+                    </div>
                     <div class="toolbar-divider"></div>
                     <div class="tool-button title-case" onclick="convertSelectedToTitleCase()">
                         <i>📝</i>
                         <div class="tool-tooltip">Title Case shortcut alt-c</div>
+                    </div>
+                    <div class="toolbar-divider"></div>
+                    <div class="tool-button" onclick="removeChapterLines()">
+                        <i>📄</i>
+                        <div class="tool-tooltip">Remove lines with only 'Chapter'</div>
                     </div>
                 </div>
         
@@ -449,6 +458,27 @@
                 setLines(lines);
             }
             
+            function removeSpecialCharGroups() {
+                const lines = getLines().map(line => {
+                    // Replace groups of 3 or more non-letter characters (except spaces)
+                    // with an empty string, preserving single or double non-letter characters
+                    return line.replace(/(?:\d+[^\w\s]+|[^\w\s]+)/g, '');
+                });
+                setLines(lines);
+            }
+
+            function removeChapterLines() {
+                const lines = getLines().filter(line => {
+                    // Convert line to lowercase and remove all whitespace
+                    const cleanedLine = line.toLowerCase().replace(/\s+/g, '');
+                    
+                    // Check if the line is NOT composed only of 'chapter' letters
+                    return !(/^[chapter]*$/.test(cleanedLine));
+                });
+                
+                setLines(lines);
+            }
+
             function convertSelectedToTitleCase() {
                 const textarea = document.getElementById('inputText');
                 const start = textarea.selectionStart;
@@ -494,6 +524,7 @@
                 toSentenceCase();
                 removeBlankLines();
                 removeRomanNumerals();
+                removeSpecialCharGroups();
             }
             
             function nextStage() {

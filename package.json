@@ -1,12 +1,33 @@
 {
-  "name": "text-manipulation-app",
+  "name": "TofC_Formatter",
   "version": "1.0.0",
-  "description": "Text Manipulation Application",
+  "description": "Quick formatting of OCR text",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win"
   },
-  "dependencies": {
-    "electron": "^28.0.0"
+  "build": {
+    "appId": "none",
+    "productName": "TofC_Formatter",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "differentialPackage": true
+    }
+  },
+  "devDependencies": {
+    "electron-builder": "^24.6.4"
   }
 }
