@@ -11,6 +11,10 @@
   "build": {
     "appId": "com.yourcompany.tofcformatter",
     "productName": "TofC Formatter",
+    "mac": {
+      "target": "dmg",
+      "category": "formatter"
+    },
     "win": {
       "target": [
         "nsis"
