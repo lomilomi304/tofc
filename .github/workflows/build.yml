@@ -25,6 +25,8 @@ jobs:
         npm install electron@latest electron-builder@latest --save-dev
 
     - name: Build Windows executable
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: npm run electron:package:win
 
     - name: Upload artifact
