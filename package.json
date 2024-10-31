@@ -1,21 +1,21 @@
 {
-  "name": "TofC_Formatter",
+  "name": "tofc-formatter",
   "version": "1.0.0",
   "description": "Quick formatting of OCR text",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "electron:package:win": "electron-builder build --win"
+    "electron:package:win": "electron-builder build --win --x64"
   },
   "build": {
-    "appId": "none",
-    "productName": "TofC_Formatter",
+    "appId": "com.yourcompany.tofcformatter",
+    "productName": "TofC Formatter",
     "win": {
       "target": [
-        "nsis",
+        "nsis"
       ],
-      "icon": "icon.ico"
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -24,7 +24,7 @@
     }
   },
   "devDependencies": {
-    "electron": "^latest-version",
-    "electron-builder": "^latest-version"
+    "electron": "^26.2.1",
+    "electron-builder": "^24.6.4"
   }
 }
