@@ -6,18 +6,14 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "build:win": "electron-builder --win"
+    "electron:package:win": "electron-builder build --win"
   },
   "build": {
     "appId": "none",
     "productName": "TofC_Formatter",
-    "directories": {
-      "output": "dist"
-    },
     "win": {
       "target": [
         "nsis",
-        "portable"
       ],
       "icon": "icon.ico"
     },
@@ -28,6 +24,7 @@
     }
   },
   "devDependencies": {
-    "electron-builder": "^24.6.4"
+    "electron": "^latest-version",
+    "electron-builder": "^latest-version"
   }
 }
